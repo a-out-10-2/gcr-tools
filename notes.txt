@@ -1,0 +1,15 @@
+Supposed Dependencies (some probably not needed)
+	pip install webrtcvad==2.0.10 wave pydub simpleaudio numpy matplotlib
+
+support
+	input: flac and wav,
+	output: wav (primary), aiff, aifc, (don't do flac until Sample Brain supports it)
+
+ARGS
+	Input:	- path(s) to directories and/ or files. (positionals) Use os file walker to resolve directories to files.
+			- ignores file extensions it doesn't recognize, and prints warning ('skipping').
+
+	-mutux
+		--analyze  Don't write anything. Just analyze and show plot for each file.
+		--write-dir Path to directory (strict) where files will spit out.
+

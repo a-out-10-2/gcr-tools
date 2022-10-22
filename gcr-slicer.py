@@ -22,8 +22,10 @@ def parse_args(*args, **kwargs):
 	"""
 	# Constructing argument parser
 	parser = argparse.ArgumentParser(description="* GCR Slicer |/-\\")
-	# parser.add_argument("positionals", type=int, nargs='?', default=8, help="A number of positionals.")
-	parser.add_argument("--run", default=False, action='store_true', help="run main")
+	parser.add_argument("positionals", type=int, nargs='?', default=8, help="A number of positional paths.")
+	mutux = parser.add_mutually_exclusive_group()
+	mutux.add_argument("--analyze", default=False, action='store_true', help="Analyze and plot silence of each file.")
+	mutux.add_argument("--write-dir", type=str, default=None, help="Path to write audio file slices.")
 	parser.add_argument("-v", "--verbose", action="count", default=0, help="Amount of output during runtime.")
 	parser.add_argument("--version", action='version', version='cli %s' % __version__)
 
@@ -45,13 +47,8 @@ def main(params):
 	elif params.verbose == 2:
 		logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
-	logging.debug(params)
-
-	# Quit now, if no signal to run
-	if not params.run:
-		return 0
-
-	logging.info(dir(webrtcvad))
+	logging.debug("params: {}".format(params))
+	logging.info("webrtcvad: {}".format(dir(webrtcvad)))
 
 	return 0
 
