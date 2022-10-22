@@ -22,7 +22,7 @@ def parse_args(*args, **kwargs):
 	"""
 	# Constructing argument parser
 	parser = argparse.ArgumentParser(description="* GCR Slicer |/-\\")
-	parser.add_argument("positionals", type=int, nargs='?', default=8, help="A number of positional paths.")
+	parser.add_argument("audio_file_or_dir_paths", type=str, nargs='+', help="A number of positional paths.")
 	mutux = parser.add_mutually_exclusive_group()
 	mutux.add_argument("--analyze", default=False, action='store_true', help="Analyze and plot silence of each file.")
 	mutux.add_argument("--write-dir", type=str, default=None, help="Path to write audio file slices.")
