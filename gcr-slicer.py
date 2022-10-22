@@ -24,6 +24,7 @@ def parse_args(*args, **kwargs):
 	parser = argparse.ArgumentParser(description="* GCR Slicer |/-\\")
 	parser.add_argument("audio_file_or_dir_paths", type=str, nargs='+', help="A number of positional paths.")
 	mutux = parser.add_mutually_exclusive_group()
+	mutux.required = True  # Require a mutux option
 	mutux.add_argument("--analyze", default=False, action='store_true', help="Analyze and plot silence of each file.")
 	mutux.add_argument("--write-dir", type=str, default=None, help="Path to write audio file slices.")
 	parser.add_argument("-v", "--verbose", action="count", default=0, help="Amount of output during runtime.")
@@ -47,8 +48,11 @@ def main(params):
 	elif params.verbose == 2:
 		logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
+	# DBG
 	logging.debug("params: {}".format(params))
 	logging.info("webrtcvad: {}".format(dir(webrtcvad)))
+
+	# Read input positionals and resolve them to a list/iterator of filepaths.
 
 	return 0
 
