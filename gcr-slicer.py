@@ -5,8 +5,11 @@
 # -----------------------------------------------------------------------------
 import argparse
 import logging
-import webrtcvad
+import os
+from pathlib import Path
 import sys
+
+import webrtcvad
 
 __version__ = 0.0
 
@@ -52,7 +55,15 @@ def main(params):
 	logging.debug("params: {}".format(params))
 	logging.info("webrtcvad: {}".format(dir(webrtcvad)))
 
+	exec_cwd = os.getcwd()
+
 	# Read input positionals and resolve them to a list/iterator of filepaths.
+	for p in params.audio_file_or_dir_paths:
+		path_obj = Path(p)
+		logging.debug("DBG: path_obj.name\t\t= {}".format(path_obj.name))
+		logging.debug("DBG: path_obj.resolve() = {}".format(path_obj.resolve()))
+		logging.debug("DBG: path_obj.is_dir()\t= {}".format(path_obj.is_dir()))
+		logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
 
 	return 0
 
