@@ -40,22 +40,6 @@ class FilePathsIterator:
 		return self
 
 
-class GCRArgumentParser(argparse.ArgumentParser):
-	""" An extension of ArgumentParser that throws an ArgumentError on syntax error. Instead of sys.exit().
-	"""
-	FLAG_HELP = "--help"
-
-	def __init__(self, description):
-		super().__init__(description=description, exit_on_error=False)
-
-	def exit(self, status=0, message=None):
-		if status:
-			raise argparse.ArgumentError(argument=None, message="(status: {}, message: '{}'".format(status, message))
-
-	def error(self, message):
-		raise argparse.ArgumentError(argument=None, message=message)
-
-
 class RC(Enum):
 	PASS = 0
 	SYNTAX_ERR = 1
@@ -67,8 +51,25 @@ def parse_args(*args, **kwargs):
 	return params: The arguments parsed into parameters.
 	rtype: argparse.Namespace
 	"""
+
+	class _ArgumentParser(argparse.ArgumentParser):
+		""" Supress exit and raise exceptions on syntax errors
+		"""
+		FLAG_HELP = "--help"
+
+		def __init__(self, description):
+			super().__init__(description=description, exit_on_error=False)
+
+		def exit(self, status=0, message=None):
+			if status:
+				raise argparse.ArgumentError(argument=None,
+											 message="(status: {}, message: '{}'".format(status, message))
+
+		def error(self, message):
+			raise argparse.ArgumentError(argument=None, message=message)
+
 	# Constructing argument parser
-	parser = GCRArgumentParser(description="* GCR Slicer |/-\\")
+	parser = _ArgumentParser(description="* GCR Slicer |/-\\")
 	parser.add_argument("audio_file_or_dir_paths", type=str, nargs='+', help="A number of positional paths.")
 	mutux = parser.add_mutually_exclusive_group()
 	mutux.required = True  # Require a mutux option
