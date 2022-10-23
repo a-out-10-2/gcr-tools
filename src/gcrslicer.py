@@ -72,12 +72,12 @@ def parse_args(*args, **kwargs):
 	parser.add_argument("--version", action='version', version='cli %s' % __version__)
 
 	# Process and return parameters
+	params = None
 	try:
 		params = parser.parse_args(*args, **kwargs)
 	except argparse.ArgumentError as ae:
 		if parser.FLAG_HELP not in list(*args):
 			print(f"ArgumentError: {ae} (args: {list(*args)})", file=sys.stderr)
-		params = None
 
 	return params
 
