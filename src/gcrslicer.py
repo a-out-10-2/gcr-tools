@@ -27,7 +27,13 @@ class FilePathsIterator:
 		self.in_paths = audio_file_or_dir_paths
 
 	def __next__(self):
-		path_obj = Path(self.in_paths.pop(0))
+		""":return: Return a new pathlib.Path object of next file
+		"""
+		path_obj = None
+		try:
+			path_obj = Path(self.in_paths.pop(0))
+		except IndexError:
+			raise StopIteration
 		return path_obj
 
 	def __iter__(self):
@@ -97,10 +103,10 @@ def main(params):
 		logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
 	# DBG
-	logging.debug(f"params: {params}")
-	logging.info(f"webrtcvad: {dir(webrtcvad)}")
-
 	exec_cwd = os.getcwd()
+	logging.debug(f"params: {params}")
+	logging.debug(f"webrtcvad: {dir(webrtcvad)}")
+	logging.debug(f"os.getcwd(): '{exec_cwd}'")
 
 	# Read input positionals and resolve them to a list/iterator of filepaths.
 	# for p in params.audio_file_or_dir_paths:
@@ -110,6 +116,12 @@ def main(params):
 	# 	logging.debug("DBG: path_obj.is_dir()\t= {}".format(path_obj.is_dir()))
 	# 	logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
 	fpi = FilePathsIterator(params.audio_file_or_dir_paths)
+
+	filepaths = [filepath for filepath in fpi]
+
+	logging.info(f"Discovered file paths: {filepaths}")
+	# for filepath in fpi:
+	# 	logging.info(f"\tfilepath={filepath}")
 
 	return 0
 
