@@ -34,6 +34,10 @@ class FilePathsIterator:
 
 
 class GCRArgumentParser(argparse.ArgumentParser):
+	""" An extension of ArgumentParser that throws an ArgumentError on syntax error. Instead of sys.exit().
+	"""
+	FLAG_HELP = "--help"
+
 	def __init__(self, description):
 		super().__init__(description=description, exit_on_error=False)
 
@@ -43,6 +47,7 @@ class GCRArgumentParser(argparse.ArgumentParser):
 
 	def error(self, message):
 		raise argparse.ArgumentError(argument=None, message=message)
+
 
 def parse_args(*args, **kwargs):
 	"""Parse the arguments received from STDIN.
@@ -64,7 +69,8 @@ def parse_args(*args, **kwargs):
 	try:
 		params = parser.parse_args(*args, **kwargs)
 	except argparse.ArgumentError as ae:
-		print(f"ArgumentError: {ae}", file=sys.stderr)
+		if parser.FLAG_HELP not in list(*args):
+			print(f"ArgumentError: {ae} (args: {list(*args)})", file=sys.stderr)
 		params = None
 
 	return params
@@ -99,15 +105,14 @@ def main(params):
 	# 	logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
 	fpi = FilePathsIterator(params.audio_file_or_dir_paths)
 
-	logging.info("BREAK HERE!")
-
 	return 0
 
 
 if __name__ == '__main__':
-	print("START HERE")
 	args = sys.argv[1:]
 	params = parse_args(args)
-	print("BREAK!")
-	# rc = main(params)
-	# sys.exit(rc)
+	if params is None:
+		rc = 1
+	else:
+		rc = main(params)
+	sys.exit(rc)
