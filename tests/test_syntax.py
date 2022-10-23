@@ -1,28 +1,34 @@
+import argparse
 import unittest
 
-# from gcrslicer import parse_args, main
-import gcrslicer
+from gcrslicer import parse_args
 
 
 class TestGCRSlicerSyntax(unittest.TestCase):
 
-	# TODO
-	# gcr-slicer --help
-	# gcr-slicer -vv --analyze
-	# gcr-slicer -vv data/
-	# gcr-slicer -vv data/ --analyze
-	# gcr-slicer -vv data/ --write-dir /tmp
-	# gcr-slicer -vv data/ data2/ data3/ --write-dir /tmp
-	# gcr-slicer -vv data/ data2/ data7/ --write-dir /tmp
-	# (!)gcr-slicer -vv data/ --write-dir /tmp --analyze
-	# (!)gcr-slicer -vv data/ --write-dir /tmp --analyze
-
 	def test_help(self):
-		#self.assertEqual(True, False)  # add assertion here
-		print("DBG: Entered test_help")
+		self.assertIsNone(parse_args(['--help']))
 
-		# params = parse_args(['--help'])
+	def test_badsyntax_null(self):
+		self.assertIsNone(parse_args(['']))
 
-		# print("DBG: params = {}".format(params))
-		params = gcrslicer.parse_args("-vv --analyze")
-		self.assertEqual(True, True)
+	def test_badsyntax_no_positionals_some_good_options(self):
+		self.assertIsNone(parse_args(['--analyze']))
+		self.assertIsNone(parse_args(['--write-dir', '/tmp']))
+
+	def test_badsyntax_some_positionals_no_options(self):
+		self.assertIsNone(parse_args(['data/']))
+		self.assertIsNone(parse_args(['data/', 'data2/', 'data3/']))
+
+	def test_badsyntax_some_positionals_some_bad_options(self):
+		self.assertIsNone(parse_args(['data/', 'data2/', 'data3/', '--analyze', '--write-dir', '/tmp']))
+		self.assertIsNone(parse_args(['data/', 'data2/', 'data3/', '--write-dir', '/tmp', '--analyze']))
+
+	def test_goodsytnax_some_positionals_some_good_options(self):
+		params = parse_args(['data/', 'data2/', 'data3/', '--analyze'])
+		self.assertIsNotNone(params)
+		self.assertIsInstance(params, argparse.Namespace)
+		params = parse_args(['data/', 'data2/', 'data3/', '--write-dir', '/tmp'])
+		self.assertIsNotNone(params)
+		self.assertIsInstance(params, argparse.Namespace)
+
