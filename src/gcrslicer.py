@@ -4,6 +4,7 @@
 #   Copyright © <2022> Andrew Moe
 # -----------------------------------------------------------------------------
 import argparse
+from enum import Enum
 import logging
 import os
 from pathlib import Path
@@ -49,6 +50,11 @@ class GCRArgumentParser(argparse.ArgumentParser):
 		raise argparse.ArgumentError(argument=None, message=message)
 
 
+class RC(Enum):
+	PASS = 0
+	SYNTAX_ERR = 1
+
+
 def parse_args(*args, **kwargs):
 	"""Parse the arguments received from STDIN.
 	param args: The string arguments to be parsed.
@@ -91,8 +97,8 @@ def main(params):
 		logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
 	# DBG
-	logging.debug("params: {}".format(params))
-	logging.info("webrtcvad: {}".format(dir(webrtcvad)))
+	logging.debug(f"params: {params}")
+	logging.info(f"webrtcvad: {dir(webrtcvad)}")
 
 	exec_cwd = os.getcwd()
 
@@ -109,10 +115,5 @@ def main(params):
 
 
 if __name__ == '__main__':
-	args = sys.argv[1:]
-	params = parse_args(args)
-	if params is None:
-		rc = 1
-	else:
-		rc = main(params)
-	sys.exit(rc)
+	params = parse_args(sys.argv[1:])
+	sys.exit(main(params) if params else RC.SYNTAX_ERR.value)
