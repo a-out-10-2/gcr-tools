@@ -14,6 +14,7 @@ import webrtcvad
 
 __version__ = 0.0
 
+
 # Exportable API
 # __all__ = ['main', 'parse_args']
 
@@ -26,41 +27,109 @@ class FilePathsIterator:
 	OSWALKER_FUNC_ON_ERROR = None  # set func for Errors
 	OSWALKER_FOLLOWLINKS = True
 
+	class STATES(Enum):
+		INIT_ITER = 0  # initial state at object construction
+		SCOPE_POSITIONAL_FILEPATH = 1  # state after iterator returned pos_fp
+		SCOPE_OSWALKER_FILEPATH = 2  # state after iterator returned oswlk_fp
+		END_ITER = 3  # final state after all discernible filepaths have been exhausted
+
 	def __init__(self, audio_file_or_dir_paths, top=os.getcwd()):
+		self.counter = 0
 		self.in_paths = audio_file_or_dir_paths
-		self.top = top
+		self.root_top = top
+
+		self.current_state = self.STATES.INIT_ITER  # signal this is the initial state of iterator
+		self.current_oswalker = None
+		self.current_oswalker_dir_scope = None
 
 		self.current_filepath = None
-		self.current_walker = None
 
 	def __next__(self):
-		""":return: Return a new pathlib.Path object of next file
+		""":return: Return a new pathlib.Path object of next filea
 		:raises: StopIteration to signal iterator's emptiness.
 		"""
-
-		# Attempt to resolve the next positional path.
 		current_positional = None
-		try:
-			# TODO: If resuming from previous os.walk, don't pop a pos
-			current_positional = self.__pop_next_existing_positional_path()
-		except StopIteration:
-			logging.debug(f"caught StopIteration during __pop_next_positional_path(), raising StopIteration")
+		if self.current_state is self.STATES.INIT_ITER:
+			# Attempt to resolve the initial positional path.
+			current_positional = None
+			try:
+				current_positional = self.__pop_next_existing_positional_path()
+			except StopIteration:
+				logging.debug(f"caught StopIteration during __pop_next_positional_path(), raising StopIteration")
+				self.current_state = self.STATES.END_ITER
+				raise StopIteration
+
+		elif self.current_state is self.STATES.SCOPE_POSITIONAL_FILEPATH:
+			# Attempt to resolve the initial positional path.
+			current_positional = None
+			try:
+				current_positional = self.__pop_next_existing_positional_path()
+			except StopIteration:
+				logging.debug(f"caught StopIteration during __pop_next_positional_path(), raising StopIteration")
+				self.current_state = self.STATES.END_ITER
+				raise StopIteration
+
+		elif self.current_state is self.STATES.SCOPE_OSWALKER_FILEPATH:
+			try:
+				current_positional = Path(self.current_walker_scope_files.pop(0))
+			except StopIteration:
+				logging.debug(f"??")
+				raise StopIteration
+
+		elif self.current_state is self.STATES.END_ITER:
 			raise StopIteration
 
-		logging.debug(f"SUCCESS! positional '{current_positional}' has been popped!")
-		logging.debug(f"new_path='{current_positional}'")
-		logging.debug(f"\texists?='{current_positional.exists()}'")
-		logging.debug(f"\tis_dir?='{current_positional.is_dir()}'")
-		logging.debug(f"\tis_file?='{current_positional.is_file()}'")
+		# # Attempt to resolve the next positional path.
+		# current_positional = None
+		# try:
+		# 	# TODO: If resuming from previous os.walk, don't pop a pos
+		# 	current_positional = self.__pop_next_existing_positional_path()
+		# except StopIteration:
+		# 	logging.debug(f"caught StopIteration during __pop_next_positional_path(), raising StopIteration")
+		# 	self.current_state = self.STATES.END_ITER
+		# 	raise StopIteration
 
-		if current_positional.is_dir():
-			current_dir_scope = os.path.join(self.top, current_positional.name)
-			self.current_walker = os.walk(current_dir_scope, topdown=self.OSWALKER_TOPDOWN, onerror=self.OSWALKER_FUNC_ON_ERROR, followlinks=self.OSWALKER_FOLLOWLINKS)
-			# TODO: Walk os.dir() until the first file is found, return it
-			root, dirs, files = self.current_walker.__next__()
-			logging.debug(f"OS_WALKER START (root='{root}', dirs={dirs}, files={files})")
+		# logging.debug(f"SUCCESS! positional '{current_positional}' has been popped!")
+		# logging.debug(f"new_path='{current_positional}'")
+		# logging.debug(f"\texists?='{current_positional.exists()}'")
+		# logging.debug(f"\tis_dir?='{current_positional.is_dir()}'")
+		# logging.debug(f"\tis_file?='{current_positional.is_file()}'")
+
+		#####################################################################################################################
+		# TODO: Arrrrrggg... what if the current "file" is mid-oswalk and IS-A-FILE. (obvious case) Account for below.
+
+		# Set current_filepath to current positional file
+		if current_positional.is_file():
+			# file path is alread resolved.
+			self.current_filepath = current_positional
+			self.current_state = self.STATES.SCOPE_POSITIONAL_FILEPATH
+			logging.debug(f"Discovered positional file (#{self.counter}) is {self.current_filepath}.")
+			self.counter += 1
+			pass
+
+		# Set current_filepath to the nearest OS walker file step.
+		elif current_positional.is_dir():
+			self.current_state = self.STATES.SCOPE_OSWALKER_FILEPATH
+			self.current_oswalker_dir_scope = os.path.join(self.root_top, current_positional.name)
+			self.current_oswalker = os.walk(self.current_oswalker_dir_scope,
+											topdown=self.OSWALKER_TOPDOWN,
+											onerror=self.OSWALKER_FUNC_ON_ERROR,
+											followlinks=self.OSWALKER_FOLLOWLINKS)
+
+			# Look for next file in OSWalker path
+			root, dirs, files = self.current_oswalker.__next__()
+			self.current_walker_scope_files = files
+			self.current_walker_scope_dirs = dirs
+
+			logging.debug("BREAK HERE!")
+
+			self.current_filepath = Path(self.current_walker_scope_files.pop(0))
+			# logging.debug(f"OS_WALKER START (root='{root}', dirs={dirs}, files={files})")
 			# OS_WALKER START (root='C:\Users\Gifty\PycharmProjects\gcr-tools\data', dirs=[], files=['21 Tom Cat, Individual Meows.flac', '34 Tom Cat, Meowing.flac', '35 Tom Cat, Purring.flac', '46 Tom Cat Growling.flac', '49 Tom Cat Hiss.flac'])
 			# OS_WALKER START (root='C:\Users\Gifty\PycharmProjects\gcr-tools\data2', dirs=[], files=['somefile.blr'])
+
+			logging.debug(f"Discovered OSWalker file (#{self.counter}) is {self.current_filepath}.")
+			self.counter += 1
 			pass
 
 		#
@@ -68,7 +137,7 @@ class FilePathsIterator:
 		# 	self.current_filepath = current_positional
 		# 	# TODO: Cross-check file exentions agains list, skip if not on it
 
-		return current_positional
+		return self.current_filepath
 
 	def __pop_next_existing_positional_path(self):
 		"""
@@ -155,7 +224,7 @@ def main(params):
 
 	# DBG
 	logging.debug(f"params: {params}")
-	logging.debug(f"webrtcvad: {dir(webrtcvad)}")
+	# logging.debug(f"webrtcvad: {dir(webrtcvad)}")
 
 	# Read input positionals and resolve them to a list/iterator of filepaths.
 	# for p in params.audio_file_or_dir_paths:
