@@ -19,7 +19,7 @@ __version__ = 0.0
 # __all__ = ['main', 'parse_args']
 
 
-class FilePathsIterator:
+class FileIterator:
 	# Default supported extensions
 	SUPPORTED_READ_EXTENSIONS = {'wav', 'flac'}
 	SUPPORTED_WRITE_EXTENSIONS = {'wav', 'aiff', 'aifc'}
@@ -224,7 +224,7 @@ def main(params):
 	# 	logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
 
 	# TEST - demonstrate file iterator can populate a list with all scoped files
-	fpi = FilePathsIterator(params.path_list)
+	fpi = FileIterator(params.path_list)
 	filepaths = [filepath for filepath in fpi]
 	logging.info(f"**FINAL**: Discovered/Resolved file paths: {filepaths}")
 
