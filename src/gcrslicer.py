@@ -74,6 +74,7 @@ class FilePathsIterator:
 						current_path = self.__pop_next_oswalker_filepath()
 					except StopIteration:
 						logging.debug("OSWalker is collapsing.")
+						self.current_state = self.STATES.UNRESOLVED_POSITIONAL
 						raise StopIteration
 
 			case self.STATES.ON_OSWALK:
@@ -83,6 +84,7 @@ class FilePathsIterator:
 					current_path = self.__pop_next_oswalker_filepath()
 				except StopIteration:
 					logging.debug("OSWalker is collapsing.")
+					self.current_state = self.STATES.UNRESOLVED_POSITIONAL
 					raise StopIteration
 
 			case self.STATES.END_ITER:
@@ -105,6 +107,10 @@ class FilePathsIterator:
 			logging.debug(f"new_path: '{new_path}', does not exist, popping next positional path")
 			new_path = Path(self.path_list.pop(0))
 
+		return new_path
+
+	def __pop_next_oswalker_filepath2(self):
+		new_path = None
 		return new_path
 
 	def __pop_next_oswalker_filepath(self):
@@ -134,7 +140,8 @@ class FilePathsIterator:
 	def __walk_next_directory(self):
 		self.current_oswalker_root, \
 		self.current_oswalker_dirs, \
-		self.current_oswalker_files = self.current_oswalker.__next__()
+		self.current_oswalker_files = \
+			self.current_oswalker.__next__()
 
 	def __iter__(self):
 		return self
@@ -163,8 +170,9 @@ def parse_args(*args, **kwargs):
 		def exit(self, status=0, message=None):
 			if status:
 				raise argparse.ArgumentError(argument=None,
-											 message="(status: {}, message: '{}'".format(status, message))
-
+											 message="(status: {}, "
+													 "message: '{}'".format(status,
+																			message))
 		def error(self, message):
 			raise argparse.ArgumentError(argument=None, message=message)
 
