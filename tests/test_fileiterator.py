@@ -40,5 +40,30 @@ class TestGCRFileIterator(unittest.TestCase):
 																	 f"filelist:{expected_filelist}).")
 
 
+	def test_file_dir(self):
+		input_pathlist = ['data3/oldaudio.mp1', 'data2/']  # must be strings
+		expected_filelist = [Path('data3/oldaudio.mp1'), Path('data2/anotherfile2.blr'), Path('data2/somefile.blr')]
+
+		fpi = FileIterator(input_pathlist)
+		found_filelist = [filepath for filepath in fpi]
+
+		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
+																	 f" into FileIterator did not yield (found_filelis"
+																	 f"t:{found_filelist}) as expected (expected_"
+																	 f"filelist:{expected_filelist}).")
+
+	def test_dir_file(self):
+		input_pathlist = ['data2/', 'data3/oldaudio.mp1']  # must be strings
+		expected_filelist = [Path('data2/anotherfile2.blr'), Path('data2/somefile.blr'), Path('data3/oldaudio.mp1')]
+
+		fpi = FileIterator(input_pathlist)
+		found_filelist = [filepath for filepath in fpi]
+
+		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
+																	f" into FileIterator did not yield (found_filelis"
+																	f"t:{found_filelist}) as expected (expected_"
+																	f"filelist:{expected_filelist}).")
+
+
 if __name__ == '__main__':
 	unittest.main()
