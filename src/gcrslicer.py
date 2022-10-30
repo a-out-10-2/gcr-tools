@@ -102,10 +102,14 @@ class FileIterator:
 		:raises IndexError: And expect it to happen for end signal.
 		:return: new_path
 		"""
-		new_path = Path(self.path_list.pop(0))
-		while not new_path.exists():
-			logging.debug(f"new_path: '{new_path}', does not exist, popping next positional path")
+		try:
 			new_path = Path(self.path_list.pop(0))
+			while not new_path.exists():
+				logging.debug(f"new_path: '{new_path}', does not exist, popping next positional path")
+				new_path = Path(self.path_list.pop(0))
+		except IndexError:
+			logging.debug("Iterator positional paths have been depleted.")
+			raise StopIteration
 
 		return new_path
 
@@ -118,7 +122,7 @@ class FileIterator:
 		new_path = None
 
 		try:
-			new_path = Path(self.current_oswalker_files.pop(0))
+			new_path = Path(self.current_oswalker_root.lstrip(self.root_dir), self.current_oswalker_files.pop(0))
 
 		except IndexError:
 			try:
