@@ -35,89 +35,138 @@ class FileIterator:
 		END_ITER = 2  # final state after all discernible filepaths have been exhausted
 
 	def __init__(self, path_list, top=os.getcwd()):
-		self.path_list = path_list
+		self.positionals = path_list
 		self.root_dir = top
 
 		self.current_state = self.STATES.UNRESOLVED_POSITIONAL  # signal this is the initial state of iterator
 
-		# self.counter = 0
+		self.counter = 0
 		self.current_file = None
 
 		self.current_oswalker = None
 		self.current_oswalker_root = None
 		self.current_oswalker_dirs = None
-		self.current_oswalker_files = None
+		self.current_oswalker_files = []  # set to empty list, so it's still poppable.
 
 	def __next__(self):
 
 		current_path = None
+		logging.info(f"[i:{self.counter}] File iterator will look for the next file.")
 
 		match self.current_state:
 			case self.STATES.UNRESOLVED_POSITIONAL:
-				logging.info(f"File iterator is initializing. Will now inspect next positional.")
+				logging.info(f"[i:{self.counter}] File iterator will look for any available unresolved positionals.")
 
-				current_path = self.__pop_next_existing_positional_path()
-				if current_path.is_file():
-					# Do Nothing. Leave current path to be returned.
-					pass
-
-				elif current_path.is_dir():
-					self.current_state = self.STATES.ON_OSWALK
-					self.current_oswalker = os.walk(os.path.join(self.root_dir, current_path.name),
-													topdown=self.OSWALKER_TOPDOWN,
-													onerror=self.OSWALKER_FUNC_ON_ERROR,
-													followlinks=self.OSWALKER_FOLLOWLINKS)
-
-					# Look for next file in OSWalker path
+				while current_path is None:
+					# Attempt to pop next positional
 					try:
-						self.__walk_next_directory()
-						current_path = self.__pop_next_oswalker_filepath()
-					except StopIteration:
-						logging.debug("OSWalker is collapsing.")
-						self.current_state = self.STATES.UNRESOLVED_POSITIONAL
+						positional = Path(self.positionals.pop(0))
+					except IndexError:
+						self.current_state = self.STATES.END_ITER
+						logging.info(f"[i:{self.counter}] File iterator is collapsing. All positionals have been exhausted.")
 						raise StopIteration
 
-			case self.STATES.ON_OSWALK:
+					# Attempt to resolve next positional
+					current_path = self.__resolve_positional(positional)
 
-				# Look for next file in OSWalker path
-				try:
-					current_path = self.__pop_next_oswalker_filepath()
-				except StopIteration:
-					logging.debug("OSWalker is collapsing.")
-					self.current_state = self.STATES.UNRESOLVED_POSITIONAL
-					raise StopIteration
+			case self.STATES.ON_OSWALK:
+				logging.info(f"[i:{self.counter}] File iterator will attempt to extract another file from OSWalker obj.")
+				current_path = self.__resume_walk()
+				# TODO: What if this walk yields no files? They'll need to be a while-loop in here to keep walking, or pop positionals, for the next one.
+				while current_path is None:
+					# Attempt to pop next positional
+					try:
+						positional = Path(self.positionals.pop(0))
+					except IndexError:
+						self.current_state = self.STATES.END_ITER
+						logging.info(f"[i:{self.counter}] File iterator is collapsing. All positionals have been exhausted.")
+						raise StopIteration
+
+					# Attempt to resolve next positional
+					current_path = self.__resolve_positional(positional)
 
 			case self.STATES.END_ITER:
-				logging.info(f"File iterator has returned all possible possible filepaths. ({self.STATES.END_ITER})")
+				logging.info(f"[i:{self.counter}] Cannot return another file. All possible file paths have been exhausted.")
 				raise StopIteration
 
 			case _:
-				logging.error(f"Iterator state '{self.current_state}' not recognized. How did you get here?")
+				logging.error(f"[i:{self.counter}] Iterator state '{self.current_state}' not recognized. How did you get here?")
 				raise StopIteration
 
+		self.counter += 1
 		return current_path
 
-	def __pop_next_existing_positional_path(self):
+	def __resolve_positional(self, positional):
+		if not positional.exists():
+			return None
+		elif positional.exists():
+			if positional.is_file():
+				return positional
+
+			elif positional.is_dir():
+				self.current_state = self.STATES.ON_OSWALK
+				self.current_oswalker = os.walk(os.path.join(self.root_dir, positional.name),
+												topdown=self.OSWALKER_TOPDOWN,
+												onerror=self.OSWALKER_FUNC_ON_ERROR,
+												followlinks=self.OSWALKER_FOLLOWLINKS)
+
+				# Walk until next file, or None if no file was found
+				return self.__resume_walk()
+
+	def __resume_walk(self):
+
+		current_file = None
+		try:
+			logging.info(f"[i:{self.counter}] Attempting to pop a remaining OSWalker files.")
+			current_file = Path(self.current_oswalker_files.pop(0))
+
+		except IndexError:
+			while current_file is None:
+				try:  # Try to take a step with the OSWalker
+					logging.info(f"[i:{self.counter}] OSWalker taking next step.")
+					(self.current_oswalker_root,
+					 self.current_oswalker_dirs,
+					 self.current_oswalker_files) = self.current_oswalker.__next__()
+
+				except StopIteration:
+					self.current_state = self.STATES.UNRESOLVED_POSITIONAL
+					logging.info(f"[i:{self.counter}] OSWalker is collapsing! Setting state: {self.STATES.UNRESOLVED_POSITIONAL}")
+					break
+
+				# Try to pop a file from this walk frame
+				try:
+					logging.info(f"[i:{self.counter}] Attempting to pop a file in this walk frame.")
+					current_file = Path(self.current_oswalker_files.pop(0))
+					# break
+
+				except IndexError:
+					logging.info(f"[i:{self.counter}] No more OSWalker files available in this walk frame!")
+					pass
+
+		logging.info(f"[i:{self.counter}] This walk is returning a: {type(current_file)}")
+		return current_file
+
+	def __OLDE_pop_next_existing_positional_path(self):
 		"""
 		:raises IndexError: And expect it to happen for end signal.
 		:return: new_path
 		"""
 		try:
-			new_path = Path(self.path_list.pop(0))
+			new_path = Path(self.positionals.pop(0))
 			while not new_path.exists():
 				logging.debug(f"new_path: '{new_path}', does not exist, popping next positional path")
-				new_path = Path(self.path_list.pop(0))
+				new_path = Path(self.positionals.pop(0))
 		except IndexError:
 			logging.debug("Iterator positional paths have been depleted.")
 			raise StopIteration
 
 		return new_path
 
-	def __pop_next_oswalker_filepath2(self):
+	def __OLDE_pop_next_oswalker_filepath2(self):
 		new_path = None
 		return new_path
 
-	def __pop_next_oswalker_filepath(self):
+	def __OLDE_pop_next_oswalker_filepath(self):
 
 		new_path = None
 
@@ -127,21 +176,21 @@ class FileIterator:
 		except IndexError:
 			try:
 				found_file = False
-				self.__walk_next_directory()
+				self.__OLDE_walk_next_directory()
 
 				while found_file is False:
 					if len(self.current_oswalker_files) > 0:
 						new_path = Path(self.current_oswalker_files.pop(0))
 						found_file = True
 					else:
-						self.__walk_next_directory()
+						self.__OLDE_walk_next_directory()
 
 			except StopIteration:
 				raise StopIteration
 
 		return new_path
 
-	def __walk_next_directory(self):
+	def __OLDE_walk_next_directory(self):
 		self.current_oswalker_root, \
 		self.current_oswalker_dirs, \
 		self.current_oswalker_files = \
@@ -185,7 +234,7 @@ def parse_args(*args, **kwargs):
 
 	# Constructing argument parser
 	parser = _ArgumentParser(description="* GCR Slicer |/-\\")
-	parser.add_argument("path_list", type=str, nargs='+', help="A number of positional paths.")
+	parser.add_argument("positionals", type=str, nargs='+', help="A number of positional paths.")
 	mutux = parser.add_mutually_exclusive_group()
 	mutux.required = True  # Require a mutux option
 	mutux.add_argument("--analyze", default=False, action='store_true', help="Analyze and plot silence of each file.")
@@ -223,7 +272,7 @@ def main(params):
 	# logging.debug(f"webrtcvad: {dir(webrtcvad)}")
 
 	# Read input positionals and resolve them to a list/iterator of filepaths.
-	# for p in params.path_list:
+	# for p in params.positionals:
 	# 	path_obj = Path(p)
 	# 	logging.debug("DBG: path_obj.name\t\t= {}".format(path_obj.name))
 	# 	logging.debug("DBG: path_obj.resolve() = {}".format(path_obj.resolve()))
@@ -231,7 +280,7 @@ def main(params):
 	# 	logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
 
 	# TEST - demonstrate file iterator can populate a list with all scoped files
-	fpi = FileIterator(params.path_list)
+	fpi = FileIterator(params.positionals)
 	filepaths = [filepath for filepath in fpi]
 	logging.info(f"**FINAL**: Discovered/Resolved file paths: {filepaths}")
 
