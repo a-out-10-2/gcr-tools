@@ -40,7 +40,7 @@ class FileIterator:
 
 		self.current_state = self.STATES.UNRESOLVED_POSITIONAL  # signal this is the initial state of iterator
 
-		self.counter = 0
+		# self.counter = 0
 		self.current_file = None
 
 		self.current_oswalker = None
@@ -146,6 +146,9 @@ class FileIterator:
 		self.current_oswalker_dirs, \
 		self.current_oswalker_files = \
 			self.current_oswalker.__next__()
+
+		logging.debug(f"DBG-tyyyyype: root:{type(self.current_oswalker_root)} dirs:{type(self.current_oswalker_dirs)} files:{type(self.current_oswalker_files)}")
+		logging.debug(f"DBG-tyyyyype: dirs[0]:{type(self.current_oswalker_dirs[0] if len(self.current_oswalker_dirs) > 1 else None)} files[0]:{type(self.current_oswalker_files[0] if len(self.current_oswalker_files) > 1 else None)}")
 
 	def __iter__(self):
 		return self
