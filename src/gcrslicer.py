@@ -5,6 +5,7 @@
 # -----------------------------------------------------------------------------
 """ CLI utility for slicing audio files for SampleBrain."""
 import argparse
+import itertools
 from enum import Enum
 import logging
 import os
@@ -57,10 +58,10 @@ class FileIterator:
 			self.current_oswalker_dirs, \
 			self.current_oswalker_files = self.current_oswalker.__next__()
 
-	def __init__(self, path_list, top=os.getcwd()):
+	def __init__(self, path_list, top=os.getcwd(), file_ext_filter=None):
 		self.positionals = path_list
 		self.root_dir = top
-
+		self.file_extension_filters = file_ext_filter if file_ext_filter else []  # a list of file extension strings
 		self.current_state = self.STATES.UNRESOLVED_POSITIONAL  # signal this is the initial state of iterator
 
 		self.counter = 0
@@ -176,6 +177,15 @@ class FileIterator:
 		logging.info(f"[i:{self.counter}] This walk is returning: {current_file}")
 		return current_file
 
+	def __fileext_filter_predicate__(self, filepath):
+		"""Filter filenames by extension. Predicate filter for itertools."""
+		skip_file = True
+		for extension in self.file_extension_filters:
+			if filepath.name.endswith(extension):
+				skip_file = False
+				break
+		return skip_file
+
 	def __iter__(self):
 		return self
 
@@ -255,8 +265,10 @@ def main(params):
 	# 	logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
 
 	# TEST - demonstrate file iterator can populate a list with all scoped files
-	fpi = FileIterator(params.positionals)
-	filepaths = list(fpi)
+	fpi = FileIterator(params.positionals, file_ext_filter=['.gps'])
+	fpi2 = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
+	filepaths = list(fpi2)
+
 	logging.info(f"**FINAL**: Discovered/Resolved file paths: {filepaths}")
 
 	return 0
