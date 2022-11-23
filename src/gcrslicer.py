@@ -150,59 +150,6 @@ class FileIterator:
 		logging.info(f"[i:{self.counter}] This walk is returning: {current_file}")
 		return current_file
 
-	def __OLDE_pop_next_existing_positional_path(self):
-		"""
-		:raises IndexError: And expect it to happen for end signal.
-		:return: new_path
-		"""
-		try:
-			new_path = Path(self.positionals.pop(0))
-			while not new_path.exists():
-				logging.debug(f"new_path: '{new_path}', does not exist, popping next positional path")
-				new_path = Path(self.positionals.pop(0))
-		except IndexError:
-			logging.debug("Iterator positional paths have been depleted.")
-			raise StopIteration
-
-		return new_path
-
-	def __OLDE_pop_next_oswalker_filepath2(self):
-		new_path = None
-		return new_path
-
-	def __OLDE_pop_next_oswalker_filepath(self):
-
-		new_path = None
-
-		try:
-			new_path = Path(self.current_oswalker_root.lstrip(self.root_dir), self.current_oswalker_files.pop(0))
-
-		except IndexError:
-			try:
-				found_file = False
-				self.__OLDE_walk_next_directory()
-
-				while found_file is False:
-					if len(self.current_oswalker_files) > 0:
-						new_path = Path(self.current_oswalker_files.pop(0))
-						found_file = True
-					else:
-						self.__OLDE_walk_next_directory()
-
-			except StopIteration:
-				raise StopIteration
-
-		return new_path
-
-	def __OLDE_walk_next_directory(self):
-		self.current_oswalker_root, \
-		self.current_oswalker_dirs, \
-		self.current_oswalker_files = \
-			self.current_oswalker.__next__()
-
-		logging.debug(f"DBG-tyyyyype: root:{type(self.current_oswalker_root)} dirs:{type(self.current_oswalker_dirs)} files:{type(self.current_oswalker_files)}")
-		logging.debug(f"DBG-tyyyyype: dirs[0]:{type(self.current_oswalker_dirs[0] if len(self.current_oswalker_dirs) > 1 else None)} files[0]:{type(self.current_oswalker_files[0] if len(self.current_oswalker_files) > 1 else None)}")
-
 	def __iter__(self):
 		return self
 
