@@ -142,7 +142,7 @@ class FileIterator:
 
 		return resolved_positional
 
-	def __resolve_relative_path(self, filename):
+	def __resolve_to_relative_path(self, filename):
 		return Path(self.oswalker_state.current_oswalker_root).relative_to(self.root_dir).joinpath(filename)
 
 	def __resume_walk(self):
@@ -151,7 +151,7 @@ class FileIterator:
 		current_file = None
 		try:
 			logging.info(f"[i:{self.counter}] Attempting to pop a remaining OSWalker files.")
-			current_file = self.__resolve_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
+			current_file = self.__resolve_to_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
 
 		except IndexError:
 			while current_file is None:
@@ -168,7 +168,7 @@ class FileIterator:
 				# Try to pop a file from this walk frame
 				try:
 					logging.info(f"[i:{self.counter}] Attempting to pop a file in this walk frame.")
-					current_file = self.__resolve_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
+					current_file = self.__resolve_to_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
 
 				except IndexError:
 					logging.info(f"[i:{self.counter}] No more OSWalker files available in this walk frame!")
