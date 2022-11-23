@@ -1,4 +1,5 @@
 """Unit test module for the FileIterator"""
+import itertools
 from pathlib import Path
 import unittest
 
@@ -81,6 +82,24 @@ class TestGCRFileIterator(unittest.TestCase):
 
 		fpi = FileIterator(input_pathlist)
 		found_filelist = list(fpi)
+
+		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
+																	f" into FileIterator did not yield (found_filelis"
+																	f"t:{found_filelist}) as expected (expected_"
+																	f"filelist:{expected_filelist}).")
+
+	def test_file_extension_filter(self):
+		"""Verify file iterator elements can be filtered by file extension."""
+		input_pathlist = ['data3/']  # must be strings
+		extension_filter = ['.gps', '.gps3']
+		expected_filelist = [
+			Path('data3/gabbaghoul/littlepeppercorns/thatonethere.gps3'),
+			Path('data3/gabbaghoul/littlepeppercorns/thisonehere.gps')
+		]
+
+		fpi = FileIterator(input_pathlist, file_ext_filter=extension_filter)
+		fpi_filtered = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
+		found_filelist = list(fpi_filtered)
 
 		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
 																	f" into FileIterator did not yield (found_filelis"
