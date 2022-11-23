@@ -57,7 +57,6 @@ class FileIterator:
 			self.current_oswalker_dirs, \
 			self.current_oswalker_files = self.current_oswalker.__next__()
 
-
 	def __init__(self, path_list, top=os.getcwd()):
 		self.positionals = path_list
 		self.root_dir = top
@@ -67,14 +66,9 @@ class FileIterator:
 		self.counter = 0
 		self.current_file = None
 
-		# self.current_oswalker = None
-		# self.current_oswalker_root = None
-		# self.current_oswalker_dirs = None
-		# self.current_oswalker_files = []  # set to empty list, so it's still poppable.
 		self.oswalker_state = None
 
 	def __next__(self):
-
 		current_path = None
 		logging.info(f"[i:{self.counter}] File iterator will look for the next file.")
 
@@ -133,10 +127,6 @@ class FileIterator:
 
 			elif positional.is_dir():
 				self.current_state = self.STATES.ON_OSWALK
-				# self.current_oswalker = os.walk(os.path.join(self.root_dir, positional.name),
-				# 								topdown=self.OSWALKER_TOPDOWN,
-				# 								onerror=self.OSWALKER_FUNC_ON_ERROR,
-				# 								followlinks=self.OSWALKER_FOLLOWLINKS)
 				self.oswalker_state = self.OSWalkerState(
 					os.walk(
 						os.path.join(self.root_dir, positional.name),
@@ -161,17 +151,12 @@ class FileIterator:
 		current_file = None
 		try:
 			logging.info(f"[i:{self.counter}] Attempting to pop a remaining OSWalker files.")
-			# current_file = Path(self.current_oswalker_root, self.current_oswalker_files.pop(0))
-			# current_file = self.__resolve_relative_path(self.current_oswalker_files.pop(0))
 			current_file = self.__resolve_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
 
 		except IndexError:
 			while current_file is None:
 				try:  # Try to take a step with the OSWalker
 					logging.info(f"[i:{self.counter}] OSWalker taking next step.")
-					# (self.current_oswalker_root,
-					#  self.current_oswalker_dirs,
-					#  self.current_oswalker_files) = self.current_oswalker.__next__()
 					self.oswalker_state.walk()
 
 				except StopIteration:
@@ -183,9 +168,7 @@ class FileIterator:
 				# Try to pop a file from this walk frame
 				try:
 					logging.info(f"[i:{self.counter}] Attempting to pop a file in this walk frame.")
-					# current_file = self.__resolve_relative_path(self.current_oswalker_files.pop(0))
 					current_file = self.__resolve_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
-				# break
 
 				except IndexError:
 					logging.info(f"[i:{self.counter}] No more OSWalker files available in this walk frame!")
@@ -211,8 +194,7 @@ def parse_args(*args, **kwargs):
 	"""
 
 	class _ArgumentParser(argparse.ArgumentParser):
-		""" Supress exit and raise exceptions on syntax errors
-		"""
+		""" Supress exit and raise exceptions on syntax errors"""
 		FLAG_HELP = "--help"
 
 		def __init__(self, description):
