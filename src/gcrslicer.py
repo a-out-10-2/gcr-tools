@@ -13,7 +13,15 @@ from pathlib import Path
 from typing import Generator
 import sys
 
+from scipy.io import wavfile
+import numpy as np
+import matplotlib.pyplot as plt
+
 # import webrtcvad
+
+# Default supported extensions
+SUPPORTED_READ_EXTENSIONS = {'wav'}  # , 'flac'}
+# SUPPORTED_WRITE_EXTENSIONS = {'wav', 'aiff', 'aifc'}
 
 __version__ = 0.0
 
@@ -233,6 +241,35 @@ def parse_args(*args, **kwargs):
 	return parsed_params
 
 
+def plot_audio(audio_filename):
+	"""Plot audio file with Matplotlib"""
+	sample_rate, data = wavfile.read(audio_filename)
+	duration = len(data) / sample_rate
+	data_type = data.dtype
+	amplitude_max = np.iinfo(data_type).max
+
+	logging.info(f"Plotting audio_filename:'{audio_filename}'")
+	logging.info(f"\tsample_rate:'{sample_rate}', duration:{duration}s, data_type:{data_type}")
+
+	timeline = np.arange(0, duration, 1 / sample_rate)
+	logging.info(f"\tlen(timeline):{len(timeline)}, timeline:{timeline}, ...")
+
+	# Normalize amplitude to unit
+	plot_data = data / amplitude_max
+
+	plt.plot(timeline, plot_data)
+	plt.xlabel('Time (s)')
+	plt.ylabel(f"Amplitude ({data_type.name})")
+	plt.ylim([-1, 1])
+	plt.title(f"{audio_filename.name}")
+
+	if data.ndim == 2:
+		plt.legend(["Left channel", "Right channel"])
+
+	plt.grid()
+	plt.show()
+
+
 def main(params):
 	"""
 	Execute the main method of the program.
@@ -252,13 +289,13 @@ def main(params):
 	# logging.debug(f"webrtcvad: {dir(webrtcvad)}")
 
 	# Initialize filter iterator based on search paths and file extension filter.
-	fpi = FileIterator(params.positionals, file_ext_filter=['.gps'])
+	fpi = FileIterator(params.positionals, file_ext_filter=SUPPORTED_READ_EXTENSIONS)
 	fpi = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
 
-	#'analyze', 'plot_audio', 'positionals', 'verbose', 'write_dir'
+	# 'analyze', 'plot_audio', 'write_dir'
 	if params.plot_audio:
 		for file in fpi:
-			print(file)
+			plot_audio(file)
 	elif params.analyze:
 		pass
 	elif params.write_dir:
