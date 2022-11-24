@@ -255,20 +255,18 @@ def main(params):
 	logging.debug(f"params: {params}")
 	# logging.debug(f"webrtcvad: {dir(webrtcvad)}")
 
-	# Read input positionals and resolve them to a list/iterator of filepaths.
-	# for p in params.positionals:
-	# 	path_obj = Path(p)
-	# 	logging.debug("DBG: path_obj.name\t\t= {}".format(path_obj.name))
-	# 	logging.debug("DBG: path_obj.resolve() = {}".format(path_obj.resolve()))
-	# 	logging.debug("DBG: path_obj.is_dir()\t= {}".format(path_obj.is_dir()))
-	# 	logging.debug("DBG: path_obj.is_file()\t= {}".format(path_obj.is_file()))
-
-	# TEST - demonstrate file iterator can populate a list with all scoped files
+	# Initialize filter iterator based on search paths and file extension filter.
 	fpi = FileIterator(params.positionals, file_ext_filter=['.gps'])
-	fpi2 = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
-	filepaths = list(fpi2)
+	fpi = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
 
-	logging.info(f"**FINAL**: Discovered/Resolved file paths: {filepaths}")
+	#'analyze', 'plot_audio', 'positionals', 'verbose', 'write_dir'
+	if params.plot_audio:
+		for file in fpi:
+			print(file)
+	elif params.analyze:
+		pass
+	elif params.write_dir:
+		pass
 
 	return 0
 
