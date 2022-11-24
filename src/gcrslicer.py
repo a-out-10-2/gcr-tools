@@ -24,10 +24,6 @@ __version__ = 0.0
 
 class FileIterator:
 	"""An iterator that returns files from a provided list of search paths."""
-	# Default supported extensions
-	SUPPORTED_READ_EXTENSIONS = {'wav', 'flac'}
-	SUPPORTED_WRITE_EXTENSIONS = {'wav', 'aiff', 'aifc'}
-
 	# OS Walker options
 	OSWALKER_TOPDOWN = True
 	OSWALKER_FUNC_ON_ERROR = None  # set func for Errors
