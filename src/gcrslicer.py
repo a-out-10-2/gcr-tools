@@ -71,11 +71,11 @@ class FileIterator:
 
 	def __next__(self):
 		current_path = None
-		logging.info(f"[i:{self.counter}] File iterator will look for the next file.")
+		logging.debug(f"[i:{self.counter}] File iterator will look for the next file.")
 
 		match self.current_state:
 			case self.STATES.UNRESOLVED_POSITIONAL:
-				logging.info(f"[i:{self.counter}] File iterator attempt to pop off an unresolved positional.")
+				logging.debug(f"[i:{self.counter}] File iterator attempt to pop off an unresolved positional.")
 
 				while current_path is None:
 					# Attempt to pop next positional
@@ -83,7 +83,7 @@ class FileIterator:
 						positional = Path(self.positionals.pop(0))
 					except IndexError as ie:
 						self.current_state = self.STATES.END_ITER
-						logging.info(
+						logging.debug(
 							f"[i:{self.counter}] File iterator is collapsing. All positionals have been exhausted.")
 						raise StopIteration from ie
 
@@ -91,7 +91,7 @@ class FileIterator:
 					current_path = self.__resolve_positional(positional)
 
 			case self.STATES.ON_OSWALK:
-				logging.info(
+				logging.debug(
 					f"[i:{self.counter}] File iterator will attempt to extract another file from OSWalker obj.")
 				current_path = self.__resume_walk()
 				while current_path is None:
@@ -100,7 +100,7 @@ class FileIterator:
 						positional = Path(self.positionals.pop(0))
 					except IndexError as ie:
 						self.current_state = self.STATES.END_ITER
-						logging.info(
+						logging.debug(
 							f"[i:{self.counter}] File iterator is collapsing. All positionals have been exhausted.")
 						raise StopIteration from ie
 
@@ -108,7 +108,7 @@ class FileIterator:
 					current_path = self.__resolve_positional(positional)
 
 			case self.STATES.END_ITER:
-				logging.info(
+				logging.debug(
 					f"[i:{self.counter}] Cannot return another file. All possible file paths have been exhausted.")
 				raise StopIteration
 
@@ -147,34 +147,32 @@ class FileIterator:
 		return Path(self.oswalker_state.current_oswalker_root).relative_to(self.root_dir).joinpath(filename)
 
 	def __resume_walk(self):
-		logging.info("DBG: Entering __resume_walk()")
-
 		current_file = None
 		try:
-			logging.info(f"[i:{self.counter}] Attempting to pop a remaining OSWalker files.")
+			logging.debug(f"[i:{self.counter}] Attempting to pop a remaining OSWalker files.")
 			current_file = self.__resolve_to_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
 
 		except IndexError:
 			while current_file is None:
 				try:  # Try to take a step with the OSWalker
-					logging.info(f"[i:{self.counter}] OSWalker taking next step.")
+					logging.debug(f"[i:{self.counter}] OSWalker taking next step.")
 					self.oswalker_state.walk()
 
 				except StopIteration:
 					self.current_state = self.STATES.UNRESOLVED_POSITIONAL
-					logging.info(
+					logging.debug(
 						f"[i:{self.counter}] OSWalker is collapsing. Setting state: {self.STATES.UNRESOLVED_POSITIONAL}")
 					break
 
 				# Try to pop a file from this walk frame
 				try:
-					logging.info(f"[i:{self.counter}] Attempting to pop a file in this walk frame.")
+					logging.debug(f"[i:{self.counter}] Attempting to pop a file in this walk frame.")
 					current_file = self.__resolve_to_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
 
 				except IndexError:
-					logging.info(f"[i:{self.counter}] No more OSWalker files available in this walk frame!")
+					logging.debug(f"[i:{self.counter}] No more OSWalker files available in this walk frame!")
 
-		logging.info(f"[i:{self.counter}] This walk is returning: {current_file}")
+		logging.debug(f"[i:{self.counter}] This walk is returning: {current_file}")
 		return current_file
 
 	def __fileext_filter_predicate__(self, filepath):
@@ -222,7 +220,8 @@ def parse_args(*args, **kwargs):
 	parser.add_argument("positionals", type=str, nargs='+', help="A number of positional paths.")
 	mutux = parser.add_mutually_exclusive_group()
 	mutux.required = True  # Require a mutux option
-	mutux.add_argument("--analyze", default=False, action='store_true', help="Analyze and plot silence of each file.")
+	mutux.add_argument("--analyze", default=False, action='store_true', help="Analyze each file.")
+	mutux.add_argument("--plot-audio", default=False, action='store_true', help="Plot each file.")
 	mutux.add_argument("--write-dir", type=str, default=None, help="Path to write audio file slices.")
 	parser.add_argument("-v", "--verbose", action="count", default=0, help="Amount of output during runtime.")
 	parser.add_argument("--version", action='version', version=f"cli {__version__}")
