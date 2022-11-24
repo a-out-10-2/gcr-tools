@@ -32,10 +32,35 @@ class TestGCRFileIterator(unittest.TestCase):
 																	f"t:{found_filelist}) as expected (expected_"
 																	f"filelist:{expected_filelist}).")
 
+	def test_dne_file(self):
+		"""Verify a file search path yields one file."""
+		input_pathlist = ['data99/blarp.zrp']  # must be strings
+		expected_filelist = []
+
+		fpi = FileIterator(input_pathlist)
+		found_filelist = list(fpi)
+		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
+																	f" into FileIterator did not yield (found_filelis"
+																	f"t:{found_filelist}) as expected (expected_"
+																	f"filelist:{expected_filelist}).")
+
 	def test_dir(self):
 		"""Verify files are found withing directory."""
 		input_pathlist = ['data2/']  # must be strings
 		expected_filelist = [Path('data2/anotherfile2.blr'), Path('data2/somefile.blr')]
+
+		fpi = FileIterator(input_pathlist)
+		found_filelist = list(fpi)
+
+		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
+																	f" into FileIterator did not yield (found_filelis"
+																	f"t:{found_filelist}) as expected (expected_"
+																	f"filelist:{expected_filelist}).")
+
+	def test_dne_dir(self):
+		"""Verify files are found withing directory."""
+		input_pathlist = ['data1010101011/']  # must be strings
+		expected_filelist = []
 
 		fpi = FileIterator(input_pathlist)
 		found_filelist = list(fpi)
