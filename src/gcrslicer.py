@@ -181,7 +181,7 @@ class FileIterator:
 		"""Filter filenames by extension. Predicate filter for itertools."""
 		skip_file = True
 		for extension in self.file_extension_filters:
-			if filepath.name.endswith(extension):
+			if filepath.name.lower().endswith(extension):
 				skip_file = False
 				break
 		return skip_file
