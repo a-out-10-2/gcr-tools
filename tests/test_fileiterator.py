@@ -3,7 +3,7 @@ import itertools
 from pathlib import Path
 import unittest
 
-from src.gcrslicer import FileIterator
+from src.gcrslicer import file_iterator2 as FileIterator
 
 
 class TestGCRFileIterator(unittest.TestCase):
@@ -123,12 +123,10 @@ class TestGCRFileIterator(unittest.TestCase):
 		]
 
 		fpi = FileIterator(input_pathlist, file_ext_filter=extension_filter)
-		fpi_filtered = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
-		found_filelist = list(fpi_filtered)
-
-		self.assertListEqual(found_filelist, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
+		fpi_list = list(fpi)
+		self.assertListEqual(fpi_list, expected_filelist, msg=f"Inputs (input_path_list:{input_pathlist})"
 																	f" into FileIterator did not yield (found_filelis"
-																	f"t:{found_filelist}) as expected (expected_"
+																	f"t:{fpi_list}) as expected (expected_"
 																	f"filelist:{expected_filelist}).")
 
 
