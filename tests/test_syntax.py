@@ -2,7 +2,7 @@
 import argparse
 import unittest
 
-from gcrslicer import parse_args
+from src.gcrslicer import parse_args
 
 
 class TestGCRSlicerSyntax(unittest.TestCase):

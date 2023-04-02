@@ -3,7 +3,7 @@ import itertools
 from pathlib import Path
 import unittest
 
-from gcrslicer import FileIterator
+from src.gcrslicer import FileIterator
 
 
 class TestGCRFileIterator(unittest.TestCase):
