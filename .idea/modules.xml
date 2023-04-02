@@ -4,7 +4,6 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../Audio-Processing/.idea/Audio-Processing.iml" filepath="$PROJECT_DIR$/../Audio-Processing/.idea/Audio-Processing.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/gcr-tools.iml" filepath="$PROJECT_DIR$/.idea/gcr-tools.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../templates/.idea/templates.iml" filepath="$PROJECT_DIR$/../templates/.idea/templates.iml" />
     </modules>
   </component>
 </project>
