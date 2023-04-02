@@ -6,6 +6,7 @@
 """ CLI utility for slicing audio files for SampleBrain."""
 import argparse
 import itertools
+from itertools import filterfalse, takewhile
 from enum import Enum
 import logging
 import os
@@ -25,9 +26,71 @@ SUPPORTED_READ_EXTENSIONS = {'wav'}  # , 'flac'}
 
 __version__ = 0.0
 
-
 # Exportable API
 # __all__ = ['main', 'parse_args']
+
+def file_iterator2(path_list, top=os.getcwd(), file_ext_filter=None):
+	positionals = [Path(p) for p in path_list]
+	root_dir = top
+	file_extension_filters = file_ext_filter if file_ext_filter else []
+	current_oswalker = None
+
+	for positional in takewhile(lambda p: p is not None, positionals):
+
+		# Skip positional, if it doesn't exist
+		if not positional.exists:
+			continue
+
+		# Yield, if a file
+		if positional.is_file():
+			matches_extension = True
+
+			# Yield path, if it matches criteria
+			for ext in file_extension_filters:
+				matches_extension = False
+				if positional.name.lower().endswith(ext):
+					matches_extension = True
+					break
+
+			if matches_extension:
+				yield positional
+			else:
+				continue
+
+		# Bring out OSWalker if it's a file
+		elif positional.is_dir():
+			current_oswalker = os.walk(
+				os.path.join(root_dir, positional.name),
+				topdown=FileIterator.OSWALKER_TOPDOWN,
+				onerror=FileIterator.OSWALKER_FUNC_ON_ERROR,
+				followlinks=FileIterator.OSWALKER_FOLLOWLINKS
+			)
+
+			# Yield, all files found in OSWalker
+			for osw_root, _, osw_files in current_oswalker:
+				for osw_file in osw_files:
+
+					# Yield path, if it matches criteria
+					matches_extension = True
+					osw_pathfile = Path(osw_root).relative_to(root_dir).joinpath(osw_file)
+					for ext in file_extension_filters:
+						matches_extension = False
+						if osw_pathfile.name.lower().endswith(ext):
+							matches_extension = True
+							break
+
+					if matches_extension:
+						yield osw_pathfile
+					else:
+						continue
+
+		else:
+			# Unknown state
+			print("DBG: entered unknown \"file\" state.")
+			return
+
+	print("DBG: End of file_iterator2")
+	return
 
 
 class FileIterator:
@@ -61,6 +124,31 @@ class FileIterator:
 			self.current_oswalker_root, \
 			self.current_oswalker_dirs, \
 			self.current_oswalker_files = self.current_oswalker.__next__()
+
+	# class Parent(object):
+	# 	def __new__(cls, value, *args, **kwargs):
+	# 		print
+	# 		'my value is', value
+	# 		return object.__new__(cls, *args, **kwargs)
+
+	# fpi_filtered = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
+	# found_filelist = list(fpi_filtered)
+	#
+	# def __new__(cls, *args, filters=None, **kwargs):
+	#
+	# 	if not filters:
+	# 		cls.filters = []
+	#
+	# 	def __fileext_filter_predicate__(filepath, inner_filters=cls.filters):
+	# 		"""Filter filenames by extension. Predicate filter for itertools."""
+	# 		skip_file = True
+	# 		for sel_ext in inner_filters:
+	# 			if filepath.name.lower().endswith(sel_ext):
+	# 				skip_file = False
+	# 				break
+	# 		return skip_file
+	#
+	# 	return itertools.filterfalse(__fileext_filter_predicate__, cls(*args, **kwargs))
 
 	def __init__(self, path_list, top=os.getcwd(), file_ext_filter=None):
 		self.positionals = path_list
@@ -290,7 +378,7 @@ def main(params):
 
 	# Initialize filter iterator based on search paths and file extension filter.
 	fpi = FileIterator(params.positionals, file_ext_filter=SUPPORTED_READ_EXTENSIONS)
-	fpi = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
+	fpi = filterfalse(fpi.__fileext_filter_predicate__, fpi)
 
 	# 'analyze', 'plot_audio', 'write_dir'
 	if params.plot_audio:
