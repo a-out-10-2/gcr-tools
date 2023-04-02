@@ -5,13 +5,11 @@
 # -----------------------------------------------------------------------------
 """ CLI utility for slicing audio files for SampleBrain."""
 import argparse
-import itertools
-from itertools import filterfalse, takewhile
+from itertools import takewhile
 from enum import Enum
 import logging
 import os
 from pathlib import Path
-from typing import Generator
 import sys
 
 from scipy.io import wavfile
@@ -26,258 +24,70 @@ SUPPORTED_READ_EXTENSIONS = {'wav'}  # , 'flac'}
 
 __version__ = 0.0
 
-# Exportable API
-# __all__ = ['main', 'parse_args']
 
-def file_iterator2(path_list, top=os.getcwd(), file_ext_filter=None):
+def file_iterator(path_list: list, top=os.getcwd(), file_ext_filters=None):
+	""" Create a file iterator based on a list of search paths.
+	:param path_list: A list of paths (files, directories) for which to search for files.
+	:param top: The top level directory to begin searching.
+	:param file_ext_filters: A list of file extensions used to validate each file find. No filtering if None.
+	:return: A generator returning files found withing the search paths
+	:rtype: Path
+	"""
+
+	def __is_file_ext_valid(filepath: Path, extensions: list[str]):
+		""" Verify if a file has an extension as specified by input.
+		:param filepath: The file path to verify.
+		:param extensions: A list of extension that validate a file path.
+		:return: True if file path has a valid extension, False if not
+		:rtype: bool
+		"""
+		matches_extension = True
+		for extension in extensions:
+			matches_extension = False
+			if filepath.name.lower().endswith(extension):
+				matches_extension = True
+				break
+
+		return matches_extension
+
 	positionals = [Path(p) for p in path_list]
-	root_dir = top
-	file_extension_filters = file_ext_filter if file_ext_filter else []
-	current_oswalker = None
+	file_extension_filters = file_ext_filters if file_ext_filters else []
 
+	# Resolve each positional for file(s), until empty
 	for positional in takewhile(lambda p: p is not None, positionals):
 
-		# Skip positional, if it doesn't exist
+		# Skip positional, if it doesn't actually exist
 		if not positional.exists:
 			continue
 
-		# Yield, if a file
+		# Yield, if a valid file. Otherwise, skip
 		if positional.is_file():
-			matches_extension = True
-
-			# Yield path, if it matches criteria
-			for ext in file_extension_filters:
-				matches_extension = False
-				if positional.name.lower().endswith(ext):
-					matches_extension = True
-					break
-
-			if matches_extension:
+			if __is_file_ext_valid(positional, file_extension_filters):
 				yield positional
 			else:
 				continue
 
-		# Bring out OSWalker if it's a file
+		# Iterate over OS Walker for files, if a directory
 		elif positional.is_dir():
-			current_oswalker = os.walk(
-				os.path.join(root_dir, positional.name),
-				topdown=FileIterator.OSWALKER_TOPDOWN,
-				onerror=FileIterator.OSWALKER_FUNC_ON_ERROR,
-				followlinks=FileIterator.OSWALKER_FOLLOWLINKS
-			)
+			current_oswalker = \
+				os.walk(os.path.join(top, positional.name), topdown=True, onerror=None, followlinks=True)
 
 			# Yield, all files found in OSWalker
 			for osw_root, _, osw_files in current_oswalker:
 				for osw_file in osw_files:
+					osw_pathfile = Path(osw_root).relative_to(top).joinpath(osw_file)
 
-					# Yield path, if it matches criteria
-					matches_extension = True
-					osw_pathfile = Path(osw_root).relative_to(root_dir).joinpath(osw_file)
-					for ext in file_extension_filters:
-						matches_extension = False
-						if osw_pathfile.name.lower().endswith(ext):
-							matches_extension = True
-							break
-
-					if matches_extension:
+					# Yield, if a valid file. Otherwise, skip
+					if __is_file_ext_valid(osw_pathfile, file_extension_filters):
 						yield osw_pathfile
 					else:
 						continue
 
 		else:
-			# Unknown state
-			print("DBG: entered unknown \"file\" state.")
+			print("Entered unknown \"file\" state.", file=sys.stderr)
 			return
 
-	print("DBG: End of file_iterator2")
 	return
-
-
-class FileIterator:
-	"""An iterator that returns files from a provided list of search paths."""
-	# OS Walker options
-	OSWALKER_TOPDOWN = True
-	OSWALKER_FUNC_ON_ERROR = None  # set func for Errors
-	OSWALKER_FOLLOWLINKS = True
-
-	class STATES(Enum):
-		"""Operational states of the FileIterator"""
-		UNRESOLVED_POSITIONAL = 0
-		ON_OSWALK = 1
-		END_ITER = 2  # final state after all discernible filepaths have been exhausted
-
-	class OSWalkerState:
-		"""A class that tracks the state of each walk frame."""
-		current_oswalker: Generator
-		current_oswalker_root: str
-		current_oswalker_dirs: list
-		current_oswalker_files: list
-
-		def __init__(self, current_oswalker):
-			self.current_oswalker = current_oswalker
-			self.current_oswalker_root = None
-			self.current_oswalker_dirs = None
-			self.current_oswalker_files = []
-
-		def walk(self):
-			"""Step into the next OSWalker directory"""
-			self.current_oswalker_root, \
-			self.current_oswalker_dirs, \
-			self.current_oswalker_files = self.current_oswalker.__next__()
-
-	# class Parent(object):
-	# 	def __new__(cls, value, *args, **kwargs):
-	# 		print
-	# 		'my value is', value
-	# 		return object.__new__(cls, *args, **kwargs)
-
-	# fpi_filtered = itertools.filterfalse(fpi.__fileext_filter_predicate__, fpi)
-	# found_filelist = list(fpi_filtered)
-	#
-	# def __new__(cls, *args, filters=None, **kwargs):
-	#
-	# 	if not filters:
-	# 		cls.filters = []
-	#
-	# 	def __fileext_filter_predicate__(filepath, inner_filters=cls.filters):
-	# 		"""Filter filenames by extension. Predicate filter for itertools."""
-	# 		skip_file = True
-	# 		for sel_ext in inner_filters:
-	# 			if filepath.name.lower().endswith(sel_ext):
-	# 				skip_file = False
-	# 				break
-	# 		return skip_file
-	#
-	# 	return itertools.filterfalse(__fileext_filter_predicate__, cls(*args, **kwargs))
-
-	def __init__(self, path_list, top=os.getcwd(), file_ext_filter=None):
-		self.positionals = path_list
-		self.root_dir = top
-		self.file_extension_filters = file_ext_filter if file_ext_filter else []  # a list of file extension strings
-		self.current_state = self.STATES.UNRESOLVED_POSITIONAL  # signal this is the initial state of iterator
-
-		self.counter = 0
-		self.current_file = None
-
-		self.oswalker_state = None
-
-	def __next__(self):
-		current_path = None
-		logging.debug(f"[i:{self.counter}] File iterator will look for the next file.")
-
-		match self.current_state:
-			case self.STATES.UNRESOLVED_POSITIONAL:
-				logging.debug(f"[i:{self.counter}] File iterator attempt to pop off an unresolved positional.")
-
-				while current_path is None:
-					# Attempt to pop next positional
-					try:
-						positional = Path(self.positionals.pop(0))
-					except IndexError as ie:
-						self.current_state = self.STATES.END_ITER
-						logging.debug(
-							f"[i:{self.counter}] File iterator is collapsing. All positionals have been exhausted.")
-						raise StopIteration from ie
-
-					# Attempt to resolve next positional
-					current_path = self.__resolve_positional(positional)
-
-			case self.STATES.ON_OSWALK:
-				logging.debug(
-					f"[i:{self.counter}] File iterator will attempt to extract another file from OSWalker obj.")
-				current_path = self.__resume_walk()
-				while current_path is None:
-					# Attempt to pop next positional
-					try:
-						positional = Path(self.positionals.pop(0))
-					except IndexError as ie:
-						self.current_state = self.STATES.END_ITER
-						logging.debug(
-							f"[i:{self.counter}] File iterator is collapsing. All positionals have been exhausted.")
-						raise StopIteration from ie
-
-					# Attempt to resolve next positional
-					current_path = self.__resolve_positional(positional)
-
-			case self.STATES.END_ITER:
-				logging.debug(
-					f"[i:{self.counter}] Cannot return another file. All possible file paths have been exhausted.")
-				raise StopIteration
-
-			case _:
-				logging.error(
-					f"[i:{self.counter}] Iterator state '{self.current_state}' not recognized. How did you get here?")
-				raise StopIteration
-
-		self.counter += 1
-		return current_path
-
-	def __resolve_positional(self, positional):
-		resolved_positional = None
-		if positional.exists():
-			if positional.is_file():
-				resolved_positional = positional
-
-			elif positional.is_dir():
-				self.current_state = self.STATES.ON_OSWALK
-				self.oswalker_state = self.OSWalkerState(
-					os.walk(
-						os.path.join(self.root_dir, positional.name),
-						topdown=self.OSWALKER_TOPDOWN,
-						onerror=self.OSWALKER_FUNC_ON_ERROR,
-						followlinks=self.OSWALKER_FOLLOWLINKS))
-
-				# Walk until next file, or None if no file was found
-				resolved_positional = self.__resume_walk()
-
-			else:
-				raise ValueError(f"Positional is neither a directory, nor a file. (positional={positional})")
-
-		return resolved_positional
-
-	def __resolve_to_relative_path(self, filename):
-		return Path(self.oswalker_state.current_oswalker_root).relative_to(self.root_dir).joinpath(filename)
-
-	def __resume_walk(self):
-		current_file = None
-		try:
-			logging.debug(f"[i:{self.counter}] Attempting to pop a remaining OSWalker files.")
-			current_file = self.__resolve_to_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
-
-		except IndexError:
-			while current_file is None:
-				try:  # Try to take a step with the OSWalker
-					logging.debug(f"[i:{self.counter}] OSWalker taking next step.")
-					self.oswalker_state.walk()
-
-				except StopIteration:
-					self.current_state = self.STATES.UNRESOLVED_POSITIONAL
-					logging.debug(
-						f"[i:{self.counter}] OSWalker is collapsing. Setting state: {self.STATES.UNRESOLVED_POSITIONAL}")
-					break
-
-				# Try to pop a file from this walk frame
-				try:
-					logging.debug(f"[i:{self.counter}] Attempting to pop a file in this walk frame.")
-					current_file = self.__resolve_to_relative_path(self.oswalker_state.current_oswalker_files.pop(0))
-
-				except IndexError:
-					logging.debug(f"[i:{self.counter}] No more OSWalker files available in this walk frame!")
-
-		logging.debug(f"[i:{self.counter}] This walk is returning: {current_file}")
-		return current_file
-
-	def __fileext_filter_predicate__(self, filepath):
-		"""Filter filenames by extension. Predicate filter for itertools."""
-		skip_file = True
-		for extension in self.file_extension_filters:
-			if filepath.name.lower().endswith(extension):
-				skip_file = False
-				break
-		return skip_file
-
-	def __iter__(self):
-		return self
 
 
 class RC(Enum):
@@ -377,12 +187,11 @@ def main(params):
 	# logging.debug(f"webrtcvad: {dir(webrtcvad)}")
 
 	# Initialize filter iterator based on search paths and file extension filter.
-	fpi = FileIterator(params.positionals, file_ext_filter=SUPPORTED_READ_EXTENSIONS)
-	fpi = filterfalse(fpi.__fileext_filter_predicate__, fpi)
+	fpi = file_iterator(params.positionals, file_ext_filters=SUPPORTED_READ_EXTENSIONS)
 
 	# 'analyze', 'plot_audio', 'write_dir'
 	if params.plot_audio:
-		for file in fpi:
+		for file in list(fpi):
 			plot_audio(file)
 	elif params.analyze:
 		pass
