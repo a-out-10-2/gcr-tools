@@ -12,9 +12,10 @@ import os
 from pathlib import Path
 import sys
 
-from scipy.io import wavfile
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas
+import soundfile
 
 # import webrtcvad
 
@@ -23,6 +24,22 @@ SUPPORTED_READ_EXTENSIONS = {'wav'}  # , 'flac'}
 # SUPPORTED_WRITE_EXTENSIONS = {'wav', 'aiff', 'aifc'}
 
 __version__ = 0.0
+
+
+class SF_Frame_Generator:
+	def __init__(self, filepath: Path, samples_per_frame: int):
+		self.soundfile = soundfile.SoundFile(file=filepath)
+		self.samples_per_frame = samples_per_frame
+		self.iter = self.soundfile.blocks(out=np.empty(shape=(self.samples_per_frame, self.soundfile.channels)), dtype='float64')
+
+	def __iter__(self):
+		return self.iter
+
+	def __next__(self):
+		framend = self.iter.__next__().transpose()
+		rarr = [pandas.Series(framend[i], name=f"channel {i}") for i in range(len(framend))]
+		rtup = tuple(rarr)
+		return rtup
 
 
 def file_iterator(path_list: list, top=os.getcwd(), file_ext_filters=None):
