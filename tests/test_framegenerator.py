@@ -2,7 +2,7 @@
 from pathlib import Path
 import unittest
 
-from src.gcrslicer import SF_Frame_Generator as FrameGenerator
+from src.gcrslicer import SFFrameGenerator as FrameGenerator
 
 
 @unittest.SkipTest

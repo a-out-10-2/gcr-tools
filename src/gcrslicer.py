@@ -26,11 +26,11 @@ SUPPORTED_READ_EXTENSIONS = {'wav'}  # , 'flac'}
 __version__ = 0.0
 
 
-class SF_Frame_Generator:
+class SFFrameGenerator:
 	def __init__(self, filepath: Path, samples_per_frame: int):
 		self.soundfile = soundfile.SoundFile(file=filepath)
 		self.samples_per_frame = samples_per_frame
-		self.iter = self.soundfile.blocks(out=np.empty(shape=(self.samples_per_frame, self.soundfile.channels)), dtype='float64')
+		self.iter = self.soundfile.blocks(out=np.empty(shape=(self.samples_per_frame, self.soundfile.channels)), dtype='float64', fill_value=0.0)
 
 	def __iter__(self):
 		return self.iter
