@@ -15,6 +15,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas
+from scipy.io import wavfile
 import soundfile
 
 # import webrtcvad
